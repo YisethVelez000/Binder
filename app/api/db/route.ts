@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET() {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    // Para MongoDB, simplemente hacemos una consulta simple en lugar de $queryRaw
     const userCount = await prisma.user.count();
     return NextResponse.json({
       ok: true,
