@@ -119,7 +119,7 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
             value={selectedGroupId}
             onChange={(e) => {
               setSelectedGroupId(e.target.value);
-              setForm((f) => ({ ...f, memberId: "" }));
+              setForm((f) => ({ ...f, memberId: "", albumId: "", versionId: "" }));
             }}
             required
             className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
@@ -132,33 +132,51 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
             ))}
           </select>
           {selectedGroup && (
-            <select
-              value={form.memberId}
-              onChange={(e) => setForm((f) => ({ ...f, memberId: e.target.value }))}
-              required
-              className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-            >
-              <option value="">Selecciona un miembro *</option>
-              {availableMembers.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
+            <>
+              <select
+                value={form.memberId}
+                onChange={(e) => setForm((f) => ({ ...f, memberId: e.target.value }))}
+                required
+                className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona un miembro *</option>
+                {availableMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={form.albumId}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, albumId: e.target.value, versionId: "" }));
+                }}
+                required
+                className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona un álbum *</option>
+                {availableAlbums.map((album) => (
+                  <option key={album.id} value={album.id}>
+                    {album.name}
+                  </option>
+                ))}
+              </select>
+              {selectedAlbum && selectedAlbum.versions.length > 0 && (
+                <select
+                  value={form.versionId}
+                  onChange={(e) => setForm((f) => ({ ...f, versionId: e.target.value }))}
+                  className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+                >
+                  <option value="">Sin versión específica</option>
+                  {availableVersions.map((version) => (
+                    <option key={version.id} value={version.id}>
+                      {version.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </>
           )}
-          <input
-            placeholder="Nombre del álbum *"
-            value={form.albumName}
-            onChange={(e) => setForm((f) => ({ ...f, albumName: e.target.value }))}
-            required
-            className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Versión (opcional)"
-            value={form.version}
-            onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))}
-            className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-          />
           <input
             placeholder="URL de imagen (opcional)"
             value={form.imageUrl}
