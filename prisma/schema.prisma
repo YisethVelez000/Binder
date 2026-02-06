@@ -1,0 +1,180 @@
+// Binder MVP — Prisma schema para MongoDB
+// Ejecutar: npx prisma db push con DATABASE_URL de MongoDB en .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  accounts      Account[]
+  sessions      Session[]
+  binders       Binder[]
+  photocards    Photocard[]
+  wishlist      WishlistItem[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  user              User    @relation(fields: [userId], references: [id])
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Binder {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  name          String      @default("Mi Binder")
+  coverImageUrl String?
+  isPublic      Boolean     @default(false)
+  theme         String      @default("default")
+  user          User        @relation(fields: [userId], references: [id])
+  pages         BinderPage[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model BinderPage {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  binderId       String       @db.ObjectId
+  pageIndex      Int
+  backgroundType String       @default("color")
+  backgroundValue String?
+  binder         Binder       @relation(fields: [binderId], references: [id])
+  slots          BinderSlot[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([binderId, pageIndex])
+}
+
+model BinderSlot {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  pageId      String     @db.ObjectId
+  slotIndex   Int
+  photocardId String?    @db.ObjectId
+  positionX   Float?     @default(0)
+  positionY   Float?     @default(0)
+  page        BinderPage  @relation(fields: [pageId], references: [id])
+  photocard   Photocard?  @relation(fields: [photocardId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([pageId, slotIndex])
+}
+
+// Catálogo global de photocards (compartido por todos los usuarios)
+model CatalogPhotocard {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  groupSlug  String
+  groupName  String
+  albumSlug  String
+  albumName  String
+  version    String?
+  memberSlug String
+  memberName String
+  imageUrl   String
+  rarity     String          @default("common")
+  addedBy    String?         @db.ObjectId // Usuario que añadió al catálogo
+  photocards Photocard[]     // Referencias desde colecciones de usuarios
+  wishlist   WishlistItem[]  // Referencias desde wishlist
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@unique([groupSlug, albumSlug, memberSlug, version])
+  @@index([groupSlug])
+  @@index([albumSlug])
+  @@index([memberSlug])
+}
+
+// Photocards en la colección personal del usuario
+model Photocard {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String            @db.ObjectId
+  catalogId  String?           @db.ObjectId // Referencia al catálogo global (opcional)
+  groupSlug  String
+  groupName  String
+  albumSlug  String
+  albumName  String
+  version    String?
+  memberSlug String
+  memberName String
+  imageUrl   String
+  rarity     String            @default("common")
+  source     String            @default("manual")
+  user       User              @relation(fields: [userId], references: [id])
+  catalog    CatalogPhotocard? @relation(fields: [catalogId], references: [id])
+  slots      BinderSlot[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model WishlistItem {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  catalogId    String?  @db.ObjectId // Referencia al catálogo global (opcional)
+  groupSlug    String?
+  groupName    String?
+  albumSlug    String?
+  albumName    String?
+  memberSlug   String?
+  memberName   String?
+  imageUrl     String?
+  notes        String?
+  priority     Int      @default(0)
+  user         User     @relation(fields: [userId], references: [id])
+  catalog      CatalogPhotocard? @relation(fields: [catalogId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Grupos de K-pop (global, compartido)
+model Group {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String    @unique
+  name        String    // Nombre normalizado en mayúsculas
+  imageUrl    String?
+  members     Member[]  // Miembros del grupo
+  addedBy     String?   @db.ObjectId // Usuario que añadió
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// Miembros de grupos
+model Member {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId     String   @db.ObjectId
+  slug        String
+  name        String   // Nombre normalizado en mayúsculas
+  imageUrl   String?
+  group       Group    @relation(fields: [groupId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([groupId, slug])
+}
