@@ -9,11 +9,25 @@ type Member = {
   name: string;
 };
 
+type AlbumVersion = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+type Album = {
+  id: string;
+  slug: string;
+  name: string;
+  versions: AlbumVersion[];
+};
+
 type Group = {
   id: string;
   slug: string;
   name: string;
   members: Member[];
+  albums: Album[];
 };
 
 export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] }) {
@@ -22,25 +36,31 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
   const [loading, setLoading] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [form, setForm] = useState({
-    albumName: "",
+    albumId: "",
     memberId: "",
-    version: "",
+    versionId: "",
     imageUrl: "",
     addToCatalog: false,
   });
 
   const selectedGroup = initialGroups.find((g) => g.id === selectedGroupId);
   const availableMembers = selectedGroup?.members || [];
+  const availableAlbums = selectedGroup?.albums || [];
+  const selectedAlbum = availableAlbums.find((a) => a.id === form.albumId);
+  const availableVersions = selectedAlbum?.versions || [];
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedGroup || !form.memberId || !form.albumName.trim()) {
+    if (!selectedGroup || !form.memberId || !form.albumId) {
       alert("Por favor completa todos los campos requeridos");
       return;
     }
     const selectedMember = availableMembers.find((m) => m.id === form.memberId);
-    if (!selectedMember) {
-      alert("Por favor selecciona un miembro válido");
+    const selectedAlbum = availableAlbums.find((a) => a.id === form.albumId);
+    const selectedVersion = form.versionId ? availableVersions.find((v) => v.id === form.versionId) : null;
+    
+    if (!selectedMember || !selectedAlbum) {
+      alert("Por favor selecciona un miembro y álbum válidos");
       return;
     }
     setLoading(true);
@@ -50,9 +70,9 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupName: selectedGroup.name,
-          albumName: form.albumName.trim(),
+          albumName: selectedAlbum.name,
           memberName: selectedMember.name,
-          version: form.version.trim() || undefined,
+          version: selectedVersion?.name || null,
           imageUrl: form.imageUrl.trim() || undefined,
           addToCatalog: form.addToCatalog,
         }),
@@ -64,7 +84,7 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
         }
         setOpen(false);
         setSelectedGroupId("");
-        setForm({ albumName: "", memberId: "", version: "", imageUrl: "", addToCatalog: false });
+        setForm({ albumId: "", memberId: "", versionId: "", imageUrl: "", addToCatalog: false });
         router.refresh();
       } else {
         const error = await res.json();
@@ -160,7 +180,7 @@ export function AddPhotocardForm({ groups: initialGroups }: { groups: Group[] })
               onClick={() => {
                 setOpen(false);
                 setSelectedGroupId("");
-                setForm({ albumName: "", memberId: "", version: "", imageUrl: "", addToCatalog: false });
+                setForm({ albumId: "", memberId: "", versionId: "", imageUrl: "", addToCatalog: false });
               }}
               className="flex-1 rounded-xl border border-[var(--accent-secondary)]/40 py-2 text-sm"
             >

@@ -54,6 +54,12 @@ export default async function DashboardLayout({
             >
               Grupos
             </Link>
+            <Link
+              href="/albums"
+              className="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)]"
+            >
+              Álbumes
+            </Link>
           </nav>
           <div className="flex items-center gap-4">
             <span className="text-sm text-[var(--text-muted)]">{session.user?.email}</span>

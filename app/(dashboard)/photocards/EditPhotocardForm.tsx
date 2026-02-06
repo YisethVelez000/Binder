@@ -9,11 +9,25 @@ type Member = {
   name: string;
 };
 
+type AlbumVersion = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+type Album = {
+  id: string;
+  slug: string;
+  name: string;
+  versions: AlbumVersion[];
+};
+
 type Group = {
   id: string;
   slug: string;
   name: string;
   members: Member[];
+  albums: Album[];
 };
 
 type Photocard = {
@@ -45,23 +59,28 @@ export function EditPhotocardForm({
     console.log("Photocard actual:", photocard);
   }, [initialGroups, photocard]);
   
-  // Encontrar el grupo y miembro actuales (comparación case-insensitive)
+  // Encontrar el grupo, miembro y álbum actuales (comparación case-insensitive)
   const currentGroup = initialGroups.find((g) => 
     g.name.toLowerCase().trim() === photocard.groupName.toLowerCase().trim()
   );
   const currentMember = currentGroup?.members.find((m) => 
     m.name.toLowerCase().trim() === photocard.memberName.toLowerCase().trim()
   );
+  const currentAlbum = currentGroup?.albums.find((a) => 
+    a.name.toLowerCase().trim() === photocard.albumName.toLowerCase().trim()
+  );
+  const currentVersion = currentAlbum?.versions.find((v) => 
+    photocard.version && v.name.toLowerCase().trim() === photocard.version.toLowerCase().trim()
+  );
   
   const [selectedGroupId, setSelectedGroupId] = useState<string>(() => {
-    // Inicializar con el grupo actual si existe
     return currentGroup?.id || "";
   });
   
   const [form, setForm] = useState({
-    albumName: photocard.albumName,
+    albumId: currentAlbum?.id || "",
     memberId: currentMember?.id || "",
-    version: photocard.version || "",
+    versionId: currentVersion?.id || "",
     imageUrl: photocard.imageUrl,
     rarity: photocard.rarity,
     addToCatalog: !photocard.catalogId,
@@ -69,6 +88,9 @@ export function EditPhotocardForm({
 
   const selectedGroup = initialGroups.find((g) => g.id === selectedGroupId);
   const availableMembers = selectedGroup?.members || [];
+  const availableAlbums = selectedGroup?.albums || [];
+  const selectedAlbum = availableAlbums.find((a) => a.id === form.albumId);
+  const availableVersions = selectedAlbum?.versions || [];
   
   // Debug: verificar estado actual
   useEffect(() => {
@@ -77,12 +99,19 @@ export function EditPhotocardForm({
     console.log("Miembro actual en form:", form.memberId);
   }, [selectedGroupId, selectedGroup, availableMembers, form.memberId]);
 
-  // Actualizar memberId cuando cambia el grupo seleccionado
+  // Actualizar memberId y albumId cuando cambia el grupo seleccionado
   useEffect(() => {
     if (selectedGroupId && selectedGroupId !== currentGroup?.id) {
-      setForm((f) => ({ ...f, memberId: "" }));
+      setForm((f) => ({ ...f, memberId: "", albumId: "", versionId: "" }));
     }
   }, [selectedGroupId, currentGroup?.id]);
+  
+  // Actualizar versionId cuando cambia el álbum seleccionado
+  useEffect(() => {
+    if (form.albumId && form.albumId !== currentAlbum?.id) {
+      setForm((f) => ({ ...f, versionId: "" }));
+    }
+  }, [form.albumId, currentAlbum?.id]);
 
   // Si no hay grupos, mostrar mensaje
   if (!initialGroups || initialGroups.length === 0) {
@@ -108,13 +137,16 @@ export function EditPhotocardForm({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedGroup || !form.memberId || !form.albumName.trim()) {
+    if (!selectedGroup || !form.memberId || !form.albumId) {
       alert("Por favor completa todos los campos requeridos");
       return;
     }
     const selectedMember = availableMembers.find((m) => m.id === form.memberId);
-    if (!selectedMember) {
-      alert("Por favor selecciona un miembro válido");
+    const selectedAlbum = availableAlbums.find((a) => a.id === form.albumId);
+    const selectedVersion = form.versionId ? availableVersions.find((v) => v.id === form.versionId) : null;
+    
+    if (!selectedMember || !selectedAlbum) {
+      alert("Por favor selecciona un miembro y álbum válidos");
       return;
     }
     setLoading(true);
@@ -124,9 +156,9 @@ export function EditPhotocardForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           groupName: selectedGroup.name,
-          albumName: form.albumName.trim(),
+          albumName: selectedAlbum.name,
           memberName: selectedMember.name,
-          version: form.version.trim() || undefined,
+          version: selectedVersion?.name || null,
           imageUrl: form.imageUrl.trim(),
           rarity: form.rarity,
           addToCatalog: form.addToCatalog && !photocard.catalogId,
@@ -160,11 +192,12 @@ export function EditPhotocardForm({
         )}
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="text-sm text-[var(--text-muted)]">Grupo *</label>
+          <label className="text-sm text-[var(--text-muted)]">Grupo *</label>
           <select
             value={selectedGroupId}
             onChange={(e) => {
               setSelectedGroupId(e.target.value);
-              setForm((f) => ({ ...f, memberId: "" }));
+              setForm((f) => ({ ...f, memberId: "", albumId: "", versionId: "" }));
             }}
             required
             className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
@@ -181,18 +214,13 @@ export function EditPhotocardForm({
               })
             ) : (
               <option disabled value="">
-                {!initialGroups ? "Cargando grupos..." : "No hay grupos disponibles. Crea grupos desde la página de Grupos."}
+                No hay grupos disponibles
               </option>
             )}
           </select>
-          {Array.isArray(initialGroups) && initialGroups.length === 0 && (
-            <p className="text-xs text-[var(--text-muted)] bg-yellow-500/20 px-3 py-2 rounded-lg">
-              ⚠️ No hay grupos en la base de datos. Ve a la página de <a href="/groups" className="underline">Grupos</a> para crear algunos.
-            </p>
-          )}
-          <label className="text-sm text-[var(--text-muted)]">Miembro *</label>
-          {selectedGroupId ? (
-            selectedGroup ? (
+          {selectedGroup && (
+            <>
+              <label className="text-sm text-[var(--text-muted)]">Miembro *</label>
               <select
                 value={form.memberId}
                 onChange={(e) => setForm((f) => ({ ...f, memberId: e.target.value }))}
@@ -210,29 +238,45 @@ export function EditPhotocardForm({
                   <option disabled>Este grupo no tiene miembros</option>
                 )}
               </select>
-            ) : (
-              <div className="text-sm text-[var(--text-muted)] bg-[var(--accent-secondary)]/20 px-3 py-2 rounded-lg">
-                Este grupo no tiene miembros. Añade miembros desde la página de Grupos.
-              </div>
-            )
-          ) : (
-            <div className="text-sm text-[var(--text-muted)] bg-[var(--accent-secondary)]/20 px-3 py-2 rounded-lg">
-              Selecciona un grupo primero para ver sus miembros.
-            </div>
+              <label className="text-sm text-[var(--text-muted)]">Álbum *</label>
+              <select
+                value={form.albumId}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, albumId: e.target.value, versionId: "" }));
+                }}
+                required
+                className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+              >
+                <option value="">Selecciona un álbum *</option>
+                {availableAlbums && availableAlbums.length > 0 ? (
+                  availableAlbums.map((album) => (
+                    <option key={album.id} value={album.id}>
+                      {album.name} {album.id === currentAlbum?.id ? "(actual)" : ""}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>Este grupo no tiene álbumes</option>
+                )}
+              </select>
+              {selectedAlbum && selectedAlbum.versions.length > 0 && (
+                <>
+                  <label className="text-sm text-[var(--text-muted)]">Versión</label>
+                  <select
+                    value={form.versionId}
+                    onChange={(e) => setForm((f) => ({ ...f, versionId: e.target.value }))}
+                    className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+                  >
+                    <option value="">Sin versión específica</option>
+                    {availableVersions.map((version) => (
+                      <option key={version.id} value={version.id}>
+                        {version.name} {version.id === currentVersion?.id ? "(actual)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </>
           )}
-          <input
-            placeholder="Nombre del álbum *"
-            value={form.albumName}
-            onChange={(e) => setForm((f) => ({ ...f, albumName: e.target.value }))}
-            required
-            className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Versión (opcional)"
-            value={form.version}
-            onChange={(e) => setForm((f) => ({ ...f, version: e.target.value }))}
-            className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-          />
           <input
             placeholder="URL de imagen"
             value={form.imageUrl}

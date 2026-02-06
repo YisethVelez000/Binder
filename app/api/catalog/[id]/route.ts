@@ -50,9 +50,9 @@ export async function PATCH(
   const albumSlug = body.albumName ? generateSlug(normalizedAlbumName) : catalogItem.albumSlug;
   const memberSlug = body.memberName ? generateSlug(normalizedMemberName) : catalogItem.memberSlug;
 
-  // Normalizar versión: si viene como cadena vacía o undefined, establecer a null
+  // Normalizar versión: si viene como cadena vacía, null o undefined, establecer a null
   const versionValue = body.hasOwnProperty('version') 
-    ? (body.version === "" || body.version === undefined ? null : body.version)
+    ? (body.version === "" || body.version === null || body.version === undefined ? null : body.version)
     : catalogItem.version;
 
   // Actualizar el catálogo global

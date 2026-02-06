@@ -6,10 +6,16 @@ import { AddWishlistForm } from "./AddWishlistForm";
 export default async function WishlistPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return null;
-  const items = await prisma.wishlistItem.findMany({
-    where: { userId: session.user.id },
-    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
-  });
+  const [items, groups] = await Promise.all([
+    prisma.wishlistItem.findMany({
+      where: { userId: session.user.id },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.group.findMany({
+      include: { members: { orderBy: { name: "asc" } } },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -17,7 +23,7 @@ export default async function WishlistPage() {
         <h1 className="font-display text-2xl font-semibold text-[var(--text)]">
           Wishlist
         </h1>
-        <AddWishlistForm />
+        <AddWishlistForm groups={JSON.parse(JSON.stringify(groups))} />
       </div>
       <p className="text-sm text-[var(--text-muted)] mb-4">
         Tu lista de photocards que quieres conseguir 💫

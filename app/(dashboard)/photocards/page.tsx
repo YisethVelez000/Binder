@@ -13,7 +13,13 @@ export default async function PhotocardsPage() {
       orderBy: { updatedAt: "desc" },
     }),
     prisma.group.findMany({
-      include: { members: { orderBy: { name: "asc" } } },
+      include: {
+        members: { orderBy: { name: "asc" } },
+        albums: {
+          include: { versions: { orderBy: { name: "asc" } } },
+          orderBy: { name: "asc" },
+        },
+      },
       orderBy: { name: "asc" },
     }),
   ]);

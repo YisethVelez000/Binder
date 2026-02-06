@@ -10,24 +10,39 @@ type CatalogItem = {
   memberName: string;
   imageUrl: string;
 };
+type Member = {
+  id: string;
+  slug: string;
+  name: string;
+};
 
-export function AddWishlistForm() {
+type Group = {
+  id: string;
+  slug: string;
+  name: string;
+  members: Member[];
+};
+export function AddWishlistForm({ groups: initialGroups = [] }: { groups?: Group[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"manual" | "catalog">("manual");
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [catalogSearch, setCatalogSearch] = useState("");
   const [form, setForm] = useState({
     catalogId: "",
-    groupName: "",
+    groupId: "",
     albumName: "",
-    memberName: "",
+    memberId: "",
     imageUrl: "",
     notes: "",
     addToCatalog: false,
   });
 
+  const selectedGroup = initialGroups?.find((g) => g.id === selectedGroupId);
+  const availableMembers = selectedGroup?.members || [];
   useEffect(() => {
     if (mode === "catalog" && open) {
       fetch("/api/catalog")
@@ -45,27 +60,51 @@ export function AddWishlistForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    
+    if (mode === "catalog") {
+      if (!form.catalogId) {
+        alert("Por favor selecciona una photocard del catálogo");
+        return;
+      }
+    } else {
+      if (!selectedGroup || !form.memberId || !form.albumName.trim()) {
+        alert("Por favor completa todos los campos requeridos");
+        return;
+      }
+    }
+    
+    const selectedMember = mode === "manual" ? availableMembers.find((m) => m.id === form.memberId) : null;
+    
     setLoading(true);
-    const res = await fetch("/api/wishlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        catalogId: mode === "catalog" && form.catalogId ? form.catalogId : undefined,
-        groupName: mode === "manual" ? form.groupName : undefined,
-        albumName: mode === "manual" ? form.albumName : undefined,
-        memberName: mode === "manual" ? form.memberName : undefined,
-        imageUrl: mode === "manual" ? form.imageUrl || undefined : undefined,
-        notes: form.notes || undefined,
-        addToCatalog: mode === "manual" ? form.addToCatalog : false,
-      }),
-    });
-    setLoading(false);
-    if (res.ok) {
-      setOpen(false);
-      setForm({ catalogId: "", groupName: "", albumName: "", memberName: "", imageUrl: "", notes: "", addToCatalog: false });
-      setMode("manual");
-      setCatalogSearch("");
-      router.refresh();
+    try {
+      const res = await fetch("/api/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          catalogId: mode === "catalog" && form.catalogId ? form.catalogId : undefined,
+          groupName: mode === "manual" && selectedGroup && selectedMember ? selectedGroup.name : undefined,
+          albumName: mode === "manual" ? form.albumName.trim() : undefined,
+          memberName: mode === "manual" && selectedMember ? selectedMember.name : undefined,
+          imageUrl: mode === "manual" ? form.imageUrl.trim() || undefined : undefined,
+          notes: form.notes.trim() || undefined,
+          addToCatalog: mode === "manual" ? form.addToCatalog : false,
+        }),
+      });
+      if (res.ok) {
+        setOpen(false);
+        setSelectedGroupId("");
+        setForm({ catalogId: "", groupId: "", albumName: "", memberId: "", imageUrl: "", notes: "", addToCatalog: false });
+        setMode("manual");
+        setCatalogSearch("");
+        router.refresh();
+      } else {
+        const error = await res.json();
+        alert(error.error || "Error al guardar");
+      }
+    } catch (err) {
+      alert("Error al guardar. Por favor intenta de nuevo.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -144,23 +183,45 @@ export function AddWishlistForm() {
             </>
           ) : (
             <>
+            <select
+            value={selectedGroupId}
+            onChange={(e) => {
+              setSelectedGroupId(e.target.value);
+              setForm((f) => ({ ...f, memberId: "" }));
+            }}
+            required
+            className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+          >
+            <option value="">Selecciona un grupo *</option>
+            {initialGroups && initialGroups.length > 0 ? (
+              initialGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))
+            ) : (
+              <option disabled>No hay grupos disponibles</option>
+            )}
+          </select>
+          {selectedGroup && (
+            <select
+              value={form.memberId}
+              onChange={(e) => setForm((f) => ({ ...f, memberId: e.target.value }))}
+              required
+              className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
+            >
+              <option value="">Selecciona un miembro *</option>
+              {availableMembers.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </select>
+          )}
               <input
-                placeholder="Nombre del grupo *"
-                value={form.groupName}
-                onChange={(e) => setForm((f) => ({ ...f, groupName: e.target.value }))}
-                required
-                className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Nombre del álbum"
+                placeholder="Nombre del álbum *"
                 value={form.albumName}
                 onChange={(e) => setForm((f) => ({ ...f, albumName: e.target.value }))}
-                className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                placeholder="Nombre del miembro *"
-                value={form.memberName}
-                onChange={(e) => setForm((f) => ({ ...f, memberName: e.target.value }))}
                 required
                 className="rounded-xl border border-[var(--accent-secondary)]/40 bg-[var(--bg)] px-3 py-2 text-sm"
               />
@@ -202,7 +263,7 @@ export function AddWishlistForm() {
             </button>
             <button
               type="submit"
-              disabled={loading || (mode === "catalog" && !form.catalogId)}
+              disabled={loading || (mode === "catalog" && !form.catalogId) || (mode === "manual" && (!selectedGroupId || !form.memberId || !form.albumName.trim()))}
               className="flex-1 rounded-xl bg-[var(--accent)] py-2 text-sm font-medium disabled:opacity-50"
             >
               {loading ? "Guardando…" : "Guardar"}

@@ -10,9 +10,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Definir modelos base primero
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  email         String    @unique
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  email         String              @unique
   name          String?
   image         String?
   emailVerified DateTime?
@@ -21,8 +22,9 @@ model User {
   binders       Binder[]
   photocards    Photocard[]
   wishlist      WishlistItem[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  albumCollection UserAlbumCollection[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 }
 
 model Account {
@@ -160,6 +162,7 @@ model Group {
   name        String    // Nombre normalizado en mayúsculas
   imageUrl    String?
   members     Member[]  // Miembros del grupo
+  albums      Album[]   // Álbumes del grupo
   addedBy     String?   @db.ObjectId // Usuario que añadió
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -177,4 +180,57 @@ model Member {
   updatedAt   DateTime @updatedAt
 
   @@unique([groupId, slug])
+}
+
+// Álbumes de grupos (definido antes de UserAlbumCollection para evitar referencias forward)
+model Album {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  groupId         String              @db.ObjectId
+  slug            String
+  name            String              // Nombre normalizado en mayúsculas
+  imageUrl        String?
+  releaseDate     DateTime?
+  group           Group               @relation(fields: [groupId], references: [id])
+  versions        AlbumVersion[]      // Versiones del álbum
+  userCollections UserAlbumCollection[] // Colecciones de usuarios
+  addedBy         String?             @db.ObjectId // Usuario que añadió
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([groupId, slug])
+  @@index([groupId])
+}
+
+// Versiones de álbumes
+model AlbumVersion {
+  id              String              @id @default(auto()) @map("_id") @db.ObjectId
+  albumId         String              @db.ObjectId
+  slug            String
+  name            String              // Nombre normalizado en mayúsculas
+  imageUrl        String?
+  color           String?             // Color característico de la versión
+  album           Album               @relation(fields: [albumId], references: [id])
+  userCollections UserAlbumCollection[] // Colecciones de usuarios con esta versión
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([albumId, slug])
+}
+
+// Colección de álbumes del usuario (definido al final después de todos los modelos que necesita)
+model UserAlbumCollection {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String         @db.ObjectId
+  albumId     String         @db.ObjectId
+  versionId   String?        @db.ObjectId // Versión específica (opcional)
+  notes       String?
+  user        User           @relation(fields: [userId], references: [id])
+  album       Album          @relation(fields: [albumId], references: [id])
+  version     AlbumVersion?  @relation(fields: [versionId], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([userId, albumId, versionId])
+  @@index([userId])
+  @@index([albumId])
 }

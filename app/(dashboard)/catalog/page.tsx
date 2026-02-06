@@ -24,7 +24,13 @@ export default async function CatalogPage() {
       take: 50,
     }),
     prisma.group.findMany({
-      include: { members: { orderBy: { name: "asc" } } },
+      include: {
+        members: { orderBy: { name: "asc" } },
+        albums: {
+          include: { versions: { orderBy: { name: "asc" } } },
+          orderBy: { name: "asc" },
+        },
+      },
       orderBy: { name: "asc" },
     }),
   ]);
