@@ -12,11 +12,10 @@ export default async function CatalogPage() {
     where: { userId: session.user.id },
     select: { catalogId: true },
   });
-  const userCatalogIds = new Set(
-    userPhotocards
-      .map((p) => p.catalogId)
-      .filter((id): id is string => id !== null && id !== undefined)
-  );
+  const userCatalogIdsArray: string[] = userPhotocards
+    .map((p) => p.catalogId)
+    .filter((id): id is string => typeof id === "string" && id !== null && id !== undefined);
+  const userCatalogIds = new Set<string>(userCatalogIdsArray);
 
   // Obtener catálogo global y grupos
   const [catalog, groups] = await Promise.all([
@@ -40,7 +39,7 @@ export default async function CatalogPage() {
       </p>
       <CatalogView 
         catalog={JSON.parse(JSON.stringify(catalog))} 
-        userCatalogIds={Array.from(userCatalogIds)}
+        userCatalogIds={userCatalogIdsArray}
         userId={session.user.id}
         groups={JSON.parse(JSON.stringify(groups))}
       />
