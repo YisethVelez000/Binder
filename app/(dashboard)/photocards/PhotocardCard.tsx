@@ -9,11 +9,25 @@ type Member = {
   name: string;
 };
 
+type AlbumVersion = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+type Album = {
+  id: string;
+  slug: string;
+  name: string;
+  versions: AlbumVersion[];
+};
+
 type Group = {
   id: string;
   slug: string;
   name: string;
   members: Member[];
+  albums: Album[];
 };
 
 type Photocard = {
