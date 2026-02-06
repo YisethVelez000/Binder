@@ -12,7 +12,11 @@ export default async function CatalogPage() {
     where: { userId: session.user.id },
     select: { catalogId: true },
   });
-  const userCatalogIds = new Set(userPhotocards.map((p) => p.catalogId).filter(Boolean));
+  const userCatalogIds = new Set(
+    userPhotocards
+      .map((p) => p.catalogId)
+      .filter((id): id is string => id !== null && id !== undefined)
+  );
 
   // Obtener catálogo global y grupos
   const [catalog, groups] = await Promise.all([
