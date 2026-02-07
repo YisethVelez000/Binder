@@ -45,9 +45,9 @@ export function AlbumsView({
     ? initialAlbums.filter((a) => a.group.id === selectedGroupId)
     : initialAlbums;
   
-  const editingAlbum = editingAlbumId ? initialAlbums.find((a) => a.id === editingAlbumId) : null;
+  const editingAlbum = editingAlbumId ? initialAlbums.find((a) => a.id === editingAlbumId) ?? null : null;
   const editingVersion = editingAlbum && editingVersionId && editingVersionId !== "new"
-    ? editingAlbum.versions.find((v) => v.id === editingVersionId)
+    ? (editingAlbum.versions.find((v) => v.id === editingVersionId) ?? null)
     : null;
   const isAddingVersion = editingAlbum && editingVersionId === "new";
   
