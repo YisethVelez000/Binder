@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BinderView } from "./BinderView";
 import { BinderNameEditor } from "./BinderNameEditor";
+import { BinderSettings } from "./BinderSettings";
+import { ArrowLeft } from "react-bootstrap-icons";
 
 export default async function BinderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -17,6 +19,7 @@ export default async function BinderDetailPage({ params }: { params: Promise<{ i
         orderBy: { pageIndex: "asc" },
         include: {
           slots: { include: { photocard: true }, orderBy: { slotIndex: "asc" } },
+          decorations: { orderBy: { zIndex: "asc" } },
         },
       },
     },
@@ -30,10 +33,11 @@ export default async function BinderDetailPage({ params }: { params: Promise<{ i
           href="/binders"
           className="text-sm text-[var(--text-muted)] hover:text-[var(--text)]"
         >
-          ← Binders
+          <ArrowLeft size={16} className="inline mr-1" /> Binders
         </Link>
       </div>
       <BinderNameEditor binderId={binder.id} initialName={binder.name} />
+      <BinderSettings binder={JSON.parse(JSON.stringify(binder))} />
       <BinderView binder={JSON.parse(JSON.stringify(binder))} />
     </div>
   );

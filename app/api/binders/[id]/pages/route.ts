@@ -17,6 +17,7 @@ export async function POST(
     data: {
       binderId,
       pageIndex: count,
+      pageType: "normal",
       slots: { create: [0, 1, 2, 3].map((slotIndex) => ({ slotIndex })) },
     },
     include: { slots: true },

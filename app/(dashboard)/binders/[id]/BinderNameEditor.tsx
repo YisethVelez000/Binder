@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil } from "react-bootstrap-icons";
 
 export function BinderNameEditor({ binderId, initialName }: { binderId: string; initialName: string }) {
   const [name, setName] = useState(initialName);
@@ -52,7 +53,7 @@ export function BinderNameEditor({ binderId, initialName }: { binderId: string; 
       onClick={() => setEditing(true)}
       title="Haz clic para editar"
     >
-      {name} ✏️
+      {name} <Pencil size={18} className="inline ml-2 opacity-60" />
     </h1>
   );
 }

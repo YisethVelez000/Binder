@@ -54,7 +54,10 @@ model Binder {
   name          String      @default("Mi Binder")
   coverImageUrl String?
   isPublic      Boolean     @default(false)
-  theme         String      @default("default")
+  theme         String      @default("macaroon")
+  primaryColor  String?     @default("#FFB6C1") // Color principal (pastel rosa por defecto)
+  secondaryColor String?    @default("#E6E6FA") // Color secundario (lavanda por defecto)
+  accentColor   String?     @default("#FFD700") // Color de acento (dorado pastel por defecto)
   user          User        @relation(fields: [userId], references: [id])
   pages         BinderPage[]
   createdAt     DateTime    @default(now())
@@ -67,12 +70,35 @@ model BinderPage {
   pageIndex      Int
   backgroundType String       @default("color")
   backgroundValue String?
+  pageType       String       @default("normal") // "cover" | "pockets" | "normal"
   binder         Binder       @relation(fields: [binderId], references: [id])
   slots          BinderSlot[]
+  decorations    BinderDecoration[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@unique([binderId, pageIndex])
+}
+
+// Decoraciones en las páginas (stickers, imágenes, texto)
+model BinderDecoration {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  pageId     String     @db.ObjectId
+  type       String     // "sticker" | "image" | "text"
+  content    String     // URL de la imagen, emoji/texto del sticker, o texto personalizado
+  positionX  Float      @default(0) // Posición X en porcentaje (0-100)
+  positionY  Float      @default(0) // Posición Y en porcentaje (0-100)
+  width      Float?     // Ancho en porcentaje
+  height     Float?     // Alto en porcentaje
+  rotation   Float      @default(0) // Rotación en grados
+  zIndex     Int        @default(0) // Orden de apilamiento
+  shape      String?    // Forma de recorte: "circle" | "heart" | "star" | "square" | null
+  fontSize   Float?     // Tamaño de fuente para texto
+  fontColor  String?    // Color del texto
+  fontFamily String?    // Familia de fuente
+  page       BinderPage @relation(fields: [pageId], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
 model BinderSlot {

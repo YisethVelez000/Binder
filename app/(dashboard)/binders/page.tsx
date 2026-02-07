@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { BinderCard } from "./BinderCard";
 
 export default async function BindersPage() {
   const session = await getServerSession(authOptions);
@@ -30,23 +31,16 @@ export default async function BindersPage() {
         {binders.map((b) => {
           const cardCount = b.pages.reduce((acc, p) => acc + p.slots.length, 0);
           return (
-            <Link
+            <BinderCard
               key={b.id}
-              href={`/binders/${b.id}`}
-              className="rounded-2xl border border-[var(--accent-secondary)]/30 bg-[var(--bg-secondary)] p-6 transition hover:border-[var(--accent)]/50"
-            >
-              <div className="aspect-video rounded-xl bg-[var(--accent)]/20 mb-3 flex items-center justify-center text-[var(--text-muted)]">
-                {b.coverImageUrl ? (
-                  <img src={b.coverImageUrl} alt="" className="h-full w-full object-cover rounded-xl" />
-                ) : (
-                  <span className="text-4xl">📀</span>
-                )}
-              </div>
-              <h2 className="font-display font-medium text-[var(--text)]">{b.name}</h2>
-              <p className="text-sm text-[var(--text-muted)]">
-                {b.pages.length} página(s) · {cardCount} photocards
-              </p>
-            </Link>
+              binder={{
+                id: b.id,
+                name: b.name,
+                coverImageUrl: b.coverImageUrl,
+                pagesCount: b.pages.length,
+                cardCount,
+              }}
+            />
           );
         })}
       </div>

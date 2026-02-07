@@ -46,9 +46,10 @@ export function AlbumsView({
     : initialAlbums;
   
   const editingAlbum = editingAlbumId ? initialAlbums.find((a) => a.id === editingAlbumId) : null;
-  const editingVersion = editingAlbum && editingVersionId
+  const editingVersion = editingAlbum && editingVersionId && editingVersionId !== "new"
     ? editingAlbum.versions.find((v) => v.id === editingVersionId)
     : null;
+  const isAddingVersion = editingAlbum && editingVersionId === "new";
   
   return (
     <div className="mx-auto max-w-6xl">
@@ -107,10 +108,10 @@ export function AlbumsView({
         />
       )}
       
-      {editingVersion && (
+      {(editingVersion || isAddingVersion) && editingAlbum && (
         <EditVersionForm
           version={editingVersion}
-          album={editingAlbum!}
+          album={editingAlbum}
           onClose={() => {
             setEditingVersionId(null);
             setEditingAlbumId(null);
